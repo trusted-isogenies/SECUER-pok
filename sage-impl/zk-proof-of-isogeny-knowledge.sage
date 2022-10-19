@@ -1,5 +1,9 @@
 #!/usr/bin/env sage
 
+####################################################################################
+# ⚠ This implementation is out of date from the paper and the C implementatiion. ⚠ #
+####################################################################################
+
 # Written by Lorenz Panny
 
 proof.all(False)
