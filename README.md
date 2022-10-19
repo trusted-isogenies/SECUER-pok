@@ -8,7 +8,7 @@
 
 **Generating a trusted curve as the start of isogeny-based protocols**
 
-Implementations of the proof of isogeny knowledge from "Supersingular Curves You Can Trust"
+Implementations of the proof of isogeny knowledge from "Supersingular Curves You Can Trust".
 
 
 ## Building on Linux
