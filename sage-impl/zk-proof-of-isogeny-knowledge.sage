@@ -1,7 +1,7 @@
 #!/usr/bin/env sage
 
 ####################################################################################
-# ⚠ This implementation is out of date from the paper and the C implementatiion. ⚠ #
+# ⚠ This implementation is out of date from the paper and the C implementation. ⚠ #
 ####################################################################################
 
 # Written by Lorenz Panny
