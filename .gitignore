@@ -1,0 +1,4 @@
+*~
+*.sage.py
+target
+.DS_Store

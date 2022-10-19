@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+
+  sage:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Set up SageMath
+      run: |
+        brew update
+        brew install sage
+
+    - name: Run
+      run:
+        cd sage-impl
+        sage zk-proof-of-isogeny-knowledge.sage
+
+  c:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Make
+      run: |
+        cd c-impl
+        make
+        make test
+
+  actionlint:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v3.0.2
+      - uses: reviewdog/action-actionlint@v1.33.0
+        with:
+          level: warning
+          fail_on_error: false
