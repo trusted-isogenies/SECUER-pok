@@ -143,7 +143,7 @@ objs751comp/%.o: src/P751/%.c
 	@mkdir -p $(@D)
 	$(CC) -c $(CFLAGS) $< -o $@
 
-ifeq "$(USE_OPT_LEVEL)" "_GENERIC_"
+ifeq "$(USE_OPT_LEVEL)" "_GENERIC_"		
     objs434/fp_generic.o: src/P434/generic/fp_generic.c
 	    $(CC) -c $(CFLAGS) src/P434/generic/fp_generic.c -o objs434/fp_generic.o
 
@@ -156,7 +156,7 @@ ifeq "$(USE_OPT_LEVEL)" "_GENERIC_"
     objs751/fp_generic.o: src/P751/generic/fp_generic.c
 	    $(CC) -c $(CFLAGS) src/P751/generic/fp_generic.c -o objs751/fp_generic.o
 else ifeq "$(USE_OPT_LEVEL)" "_FAST_"
-ifeq "$(ARCHITECTURE)" "_AMD64_"
+ifeq "$(ARCHITECTURE)" "_AMD64_"		
     objs434/fp_x64.o: src/P434/AMD64/fp_x64.c
 	    $(CC) -c $(CFLAGS) src/P434/AMD64/fp_x64.c -o objs434/fp_x64.o
 
@@ -180,7 +180,7 @@ ifeq "$(ARCHITECTURE)" "_AMD64_"
 
     objs751/fp_x64_asm.o: src/P751/AMD64/fp_x64_asm.S
 	    $(CC) -c $(CFLAGS) src/P751/AMD64/fp_x64_asm.S -o objs751/fp_x64_asm.o
-else ifeq "$(ARCHITECTURE)" "_ARM64_"
+else ifeq "$(ARCHITECTURE)" "_ARM64_"	
     objs434/fp_arm64.o: src/P434/ARM64/fp_arm64.c
 	    $(CC) -c $(CFLAGS) src/P434/ARM64/fp_arm64.c -o objs434/fp_arm64.o
 
@@ -332,7 +332,7 @@ tests_p751: lib751 lib751comp lib751_for_KATs lib751comp_for_KATs
 	$(CC) $(CFLAGS) -L./lib751comp tests/test_SIDHp751_compressed.c tests/test_extras.c -lsidh $(LDFLAGS) -o sidh751_compressed/test_SIDH $(ARM_SETTING)
 	$(CC) $(CFLAGS) -L./lib751comp tests/test_SIKEp751_compressed.c tests/test_extras.c -lsidh $(LDFLAGS) -o sike751_compressed/test_SIKE $(ARM_SETTING)
 	$(CC) $(CFLAGS) -L./lib751 tests/PQCtestKAT_kem751.c tests/rng/rng.c -lsidh_for_testing $(LDFLAGS) -o sike751/PQCtestKAT_kem $(ARM_SETTING)
-	$(CC) $(CFLAGS) -L./lib751comp tests/PQCtestKAT_kem751_compressed.c tests/rng/rng.c -lsidh_for_testing $(LDFLAGS) -o sike751_compressed/PQCtestKAT_kem $(ARM_SETTING)
+	$(CC) $(CFLAGS) -L./lib751comp tests/PQCtestKAT_kem751_compressed.c tests/rng/rng.c -lsidh_for_testing $(LDFLAGS) -o sike751_compressed/PQCtestKAT_kem $(ARM_SETTING)    
 
 check: tests_p434 tests_p503 tests_p610 tests_p751
 
