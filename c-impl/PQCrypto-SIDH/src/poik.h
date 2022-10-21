@@ -16,9 +16,6 @@
 
 ////////////////////////////////////////////////////////////////
 
-// number of repetitions -- soundness is (2/3)^this
-
-
 #if POIK_BITS == 434
     #define POIK_REPS       219
     #define POIK_WIDTH      4
@@ -38,10 +35,6 @@
 #else
 #error "please #define POIK_BITS to {434,503,610,751} prior to including <poik.h>"
 #endif
-
-// dimensions of the isogeny proof in SIDH squares
-// #define POIK_WIDTH      (4 - (POIK_BITS >= 610))
-// #define POIK_HEIGHT     (7 - (POIK_BITS >= 503))
 
 #define HASH_BYTES      32      // length of hash commitments
 #define HIDE_BYTES      55      // entropy in hash commitments  //TODO
