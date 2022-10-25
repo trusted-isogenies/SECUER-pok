@@ -20,24 +20,29 @@
     #define POIK_REPS       219
     #define POIK_WIDTH      4
     #define POIK_HEIGHT     7
+    #define HASH_BYTES      32      // length of hash commitments
+    #define HIDE_BYTES      64      // entropy in hash commitments
 #elif POIK_BITS == 503
     #define POIK_REPS       219
     #define POIK_WIDTH      4
     #define POIK_HEIGHT     7
+    #define HASH_BYTES      32      // length of hash commitments
+    #define HIDE_BYTES      64      // entropy in hash commitments
 #elif POIK_BITS == 610
-    #define POIK_REPS       327
+    #define POIK_REPS       329
     #define POIK_WIDTH      4
     #define POIK_HEIGHT     7
+    #define HASH_BYTES      48      // length of hash commitments
+    #define HIDE_BYTES      96      // entropy in hash commitments
 #elif POIK_BITS == 751
     #define POIK_REPS       438
     #define POIK_WIDTH      4
     #define POIK_HEIGHT     7
+    #define HASH_BYTES      64      // length of hash commitments
+    #define HIDE_BYTES      128     // entropy in hash commitments
 #else
 #error "please #define POIK_BITS to {434,503,610,751} prior to including <poik.h>"
 #endif
-
-#define HASH_BYTES      32      // length of hash commitments
-#define HIDE_BYTES      55      // entropy in hash commitments  //TODO
 
 ////////////////////////////////////////////////////////////////
 
