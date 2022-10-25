@@ -27,6 +27,10 @@ make ARCH=M1;
 make test ARCH=M1;
 ```
 
+## Generating a Proof
 
+The `prove_xxx` executables can be run with the `--initial` argument to start from the curve with j-invariant 1728. If no argument is passed, the program expects a starting curve on `stdin`.
 
+## Verification in Sage
 
+The `verify.sage` script reads a proof on `stdin` and verifies it. The program expects one of the following arguments `--p434`, `--p503`, `--p610`, `--p751` to determine the parameter set. It requires sage >= 9.7 and the dependencies listed in `requirements.txt`.
