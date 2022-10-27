@@ -33,4 +33,4 @@ The `prove_xxx` executables can be run with the `--initial` argument to start fr
 
 ## Verification in Sage
 
-The `verify.sage` script reads a proof on `stdin` and verifies it. The program expects one of the following arguments `--p434`, `--p503`, `--p610`, `--p751` to determine the parameter set. It requires sage >= 9.7 and the dependencies listed in `requirements.txt`.
+The `verify.sage` script reads a proof on `stdin` and verifies it. The program expects one of the following arguments `--p434`, `--p503`, `--p610`, `--p751` to determine the parameter set. It requires `sage >= 9.7` and the `pycryptodome` package.
