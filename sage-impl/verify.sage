@@ -199,7 +199,7 @@ class Proof(NamedTuple):
 params = {
         'p434': Parameters(216, 137, 219, 4, 7),
         'p503': Parameters(250, 159, 219, 4, 7),
-        'p610': Parameters(305, 192, 327, 4, 7),
+        'p610': Parameters(305, 192, 329, 4, 7),
         'p751': Parameters(372, 239, 438, 4, 7),
     }
 
