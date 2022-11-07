@@ -550,7 +550,8 @@ void Ladder(point_proj const *P, digit_t const *m, const f2elm_t A, size_t order
 
 // computes EE = E/<K> and evaluates phi_K at Q
 // K must have order 2^e2
-static bool Isogeny_A(curve_proj const *E, point_proj const *K, curve_proj *EE, point_proj *Q)
+// back will be set to the order-2 point on the codomain that leads to backtracking
+static bool Isogeny_A(curve_proj const *E, point_proj const *K, curve_proj *EE, point_proj *Q, point_proj *back)
 {
     assert(!fp2_iszero(E->C));
 
@@ -635,6 +636,11 @@ static bool Isogeny_A(curve_proj const *E, point_proj const *K, curve_proj *EE, 
     if (Q) eval_4_isog(Q, coeff);
 
     if (EE) AC24_to_AC(A24plus, C24, EE);
+
+    if (back) {
+        fp2zero(back->X);
+        fp2one(back->Z);
+    }
 
     return true;
 }
@@ -844,7 +850,13 @@ static void Random_Isogeny_Chain_A(curve_proj const *E0, chain_A *chain)
     chain->E[0] = *E0;
     for (size_t i = 0; i < POIK_WIDTH; ++i) {
         Random_Point_A(&chain->E[i], &chain->P[i], i ? &Pback : NULL);
-        Isogeny_A(&chain->E[i], &chain->P[i], &chain->E[i+1], NULL);
+#ifndef NDEBUG
+        point_proj Pback2;
+        Isogeny_A(&chain->E[i], &chain->P[i], &chain->E[i+1], NULL, &Pback2);
+        assert(point_equal(&Pback, &Pback2));
+#else
+        Isogeny_A(&chain->E[i], &chain->P[i], &chain->E[i+1], NULL, NULL);
+#endif
     }
 
 #ifndef NDEBUG  // ensure there is no backtracking
@@ -863,8 +875,8 @@ static void Random_Isogeny_Chain_A(curve_proj const *E0, chain_A *chain)
     for (size_t i = 0; i < POIK_WIDTH; ++i) {
         {
             curve_proj E;
-            assert(Isogeny_A(&chain->E[i], &chain->P[i], &E, &P)); assert(curve_equal(&E, &chain->E[i+1]));
-            assert(Isogeny_A(&chain->E[i], &chain->P[i], &E, &Q)); assert(curve_equal(&E, &chain->E[i+1]));
+            assert(Isogeny_A(&chain->E[i], &chain->P[i], &E, &P, NULL)); assert(curve_equal(&E, &chain->E[i+1]));
+            assert(Isogeny_A(&chain->E[i], &chain->P[i], &E, &Q, NULL)); assert(curve_equal(&E, &chain->E[i+1]));
         }
     }
     f2elm_t A24plus, C24;
@@ -975,7 +987,7 @@ static void Pack_Chain_A(chain_A const *in, packed_chain_A *out)
         }
 
         curve_proj EE;
-        bool ret = Isogeny_A(&E, &K, &EE, NULL);
+        bool ret = Isogeny_A(&E, &K, &EE, NULL, NULL);
         assert(ret); (void) ret;
 
         f2elm_t j0, j1;
@@ -1026,25 +1038,31 @@ static bool Unpack_Chain_A(packed_fp2 const *E0, packed_chain_A const *in, curve
 {
     unpack_curve(E0, E, true);
 
+    point_proj back;
+
     for (size_t i = 0; i < POIK_WIDTH; ++i) {
         if (i) {
             mont_iso iso;
             canonical_model(E, &iso);
             fp2copy(iso.B, E->A);
             fp2one(E->C);
+            eval_iso(&iso, &back, &back);
         }
 
         point_proj K;
         unpack_point(&in->x[i], &K);
-        if (!Isogeny_A(E, &K, E, NULL))
+        if (!Isogeny_A(E, &K, E, i ? &back : NULL, i ? NULL : &back))
             return false;
     }
-    return true;
+
+    return !fp2_iszero(back.Z);
 }
 
 static bool Unpack_Chain_B(packed_fp2 const *E0, packed_chain_B const *in, curve_proj *E)
 {
     unpack_curve(E0, E, true);
+
+    point_proj back = {0};
 
     for (size_t i = 0; i < POIK_HEIGHT; ++i) {
         if (i) {
@@ -1052,14 +1070,16 @@ static bool Unpack_Chain_B(packed_fp2 const *E0, packed_chain_B const *in, curve
             canonical_model(E, &iso);
             fp2copy(iso.B, E->A);
             fp2one(E->C);
+            eval_iso(&iso, &back, &back);
         }
 
         point_proj K;
         unpack_point(&in->x[i], &K);
-        if (!Isogeny_B(E, &K, E, NULL, NULL))
+        if (!Isogeny_B(E, &K, E, i ? &back : NULL, i ? NULL : &back))
             return false;
     }
-    return true;
+
+    return !fp2_iszero(back.Z);
 }
 ////////////////////////////////////////////////////////////////
 
@@ -1099,7 +1119,7 @@ static void Instance(struct secret const *sec, struct instance *v, struct commit
             assert(curve_equal(&Et, &El));
             curve_proj Eb, Er;
             point_proj Kb = Kt, Kr = Kl;
-            Isogeny_A(&Et, &Kt, &Er, &Kr);
+            Isogeny_A(&Et, &Kt, &Er, &Kr, NULL);
             Isogeny_B(&El, &Kl, &Eb, &Kb, NULL);
             bottom.E[col] = Eb;
             bottom.P[col] = Kb;
@@ -1110,7 +1130,7 @@ static void Instance(struct secret const *sec, struct instance *v, struct commit
         right.P[row] = Kl;
     }
 
-    Isogeny_A(&bottom.E[POIK_WIDTH-1], &bottom.P[POIK_WIDTH-1], &bottom.E[POIK_WIDTH], NULL);
+    Isogeny_A(&bottom.E[POIK_WIDTH-1], &bottom.P[POIK_WIDTH-1], &bottom.E[POIK_WIDTH], NULL, NULL);
     Isogeny_B(&right.E[POIK_HEIGHT-1], &right.P[POIK_HEIGHT-1], &right.E[POIK_HEIGHT], NULL, NULL);
     assert(curve_equal(&bottom.E[POIK_WIDTH], &right.E[POIK_HEIGHT]));
 
@@ -1234,7 +1254,7 @@ static void render_progress(size_t idx)
     }
 
     static size_t last = -1;
-    unsigned const done = 64 * idx / POIK_REPS;
+    unsigned const done = 63 * idx / POIK_REPS;
     if (done == last)
         return;
 
