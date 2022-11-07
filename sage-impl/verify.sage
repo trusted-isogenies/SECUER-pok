@@ -8,20 +8,18 @@ from Crypto.Hash import SHAKE256
 
 ################################################################
 
-def invalid():
-    print('\x1b[31minvalid proof\x1b[0m', file=sys.stderr)
-    exit(1)
+class Invalid(Exception): pass
 
 def read_int():
     s = input()
     if not re.match('^-?[0-9]+$', s):
-        invalid()
+        raise Invalid
     return int(s)
 
 def read_bytes():
     s = input()
     if not re.match('^([0-9a-f]{2})+$', s, re.IGNORECASE):
-        invalid()
+        raise Invalid
     return bytes.fromhex(s)
 
 ################################################################
@@ -69,12 +67,28 @@ def canonical(E):
     A = min(As, key = lambda el: (int(el[0]), int(el[1])))
     return E.isomorphism_to(curve(A))
 
-def unpack_chain(A, chain):
+def unpack_chain(A, chain, deg):
     E = curve(A)
+
+    # find l-torsion basis
+    l, = deg.prime_factors()
+    pts = filter(bool, E(0).division_points(l))
+    P = next(pts)
+    Q = next(pts)
+    while P.weil_pairing(Q,l) == 1:
+        Q = next(pts)
+
     for x in chain:
         K = E.lift_x(x)
-        E = E.isogeny(K, algorithm='factored').codomain()
-        E = canonical(E).codomain()
+        if deg*K or not (deg//l)*K:
+            raise Invalid       # incorrect degree
+        f = E.isogeny(K, algorithm='factored')
+        f = canonical(f.codomain()) * f
+        P, Q = map(f, (P, Q))
+        if not (P or Q):
+            raise Invalid       # not cyclic
+        E = f.codomain()
+
     return E
 
 ################################################################
@@ -112,8 +126,8 @@ class LeftResponse(NamedTuple):
     def read(param):
         return LeftResponse(read_bytes(), read_bytes(), [param.read_element() for _ in range(param.h)])
 
-    def unpack(self, E0, _):
-        j2 = unpack_chain(E0, self.chain).j_invariant()
+    def unpack(self, E0, _, __, B):
+        j2 = unpack_chain(E0, self.chain, B).j_invariant()
         h2 = hash_hiding(self.r2, j2)
         return h2, self.h3
 
@@ -127,9 +141,9 @@ class BottomResponse(NamedTuple):
     def read(param):
         return BottomResponse(read_bytes(), read_bytes(), param.read_element(), [param.read_element() for _ in range(param.w)])
 
-    def unpack(self, *_):
+    def unpack(self, _, __, A, ___):
         j2 = curve(self.E2).j_invariant()
-        j3 = unpack_chain(self.E2, self.chain).j_invariant()
+        j3 = unpack_chain(self.E2, self.chain, A).j_invariant()
         h2 = hash_hiding(self.r2, j2)
         h3 = hash_hiding(self.r3, j3)
         return h2, h3
@@ -143,8 +157,8 @@ class RightResponse(NamedTuple):
     def read(param):
         return RightResponse(read_bytes(), read_bytes(), [param.read_element() for _ in range(param.h)])
 
-    def unpack(self, _, E1):
-        j3 = unpack_chain(E1, self.chain).j_invariant()
+    def unpack(self, _, E1, __, B):
+        j3 = unpack_chain(E1, self.chain, B).j_invariant()
         h3 = hash_hiding(self.r3, j3)
         return self.h2, h3
 
@@ -159,41 +173,49 @@ class Proof(NamedTuple):
 
     @staticmethod
     def read(param):
-        E0 = param.read_element()
-        E1 = param.read_element()
-        tags = []
-        responses = []
-        while len(responses) < param.reps:
-            tag = read_int()
-            tags.append(tag)
-            if tag == -1:
-                responses.append(LeftResponse.read(param))
-            elif tag == 0:
-                responses.append(BottomResponse.read(param))
-            elif tag == +1:
-                responses.append(RightResponse.read(param))
-            else:
-                return None
-        return Proof(param, E0, E1, tags, responses)
+        try:
+            E0 = param.read_element()
+            E1 = param.read_element()
+            tags = []
+            responses = []
+            while len(responses) < param.reps:
+                tag = read_int()
+                tags.append(tag)
+                if tag == -1:
+                    responses.append(LeftResponse.read(param))
+                elif tag == 0:
+                    responses.append(BottomResponse.read(param))
+                elif tag == +1:
+                    responses.append(RightResponse.read(param))
+                else:
+                    return None
+            return Proof(param, E0, E1, tags, responses)
+        except Invalid:
+            return None
 
     def verify(proof):
 
         @parallel(os.cpu_count())
         def work(idx):
-            return proof.responses[idx].unpack(proof.E0, proof.E1)
+            try:
+                return proof.responses[idx].unpack(proof.E0, proof.E1, 2^proof.param.a, 3^proof.param.b)
+            except Invalid:
+                return None
 
         hs = [None]*proof.param.reps
 
-        for ((idx,),_),(h2,h3) in work(list(range(proof.param.reps))):
-            print(f'{idx:3} {h2.hex()} {h3.hex()}', file=sys.stderr)
-            hs[idx] = (h2,h3)
+        for ((idx,),_), res in work(list(range(proof.param.reps))):
+            if res is None:
+                return None
+            print(f'{idx:3} {" ".join(map(bytes.hex, res))}', file=sys.stderr)
+            hs[idx] = res
 
         if challenge(proof.E0, proof.E1, hs) != proof.tags:
             return None
 
         return proof.E0, proof.E1
 
-##############################################################################################
+################################################################
 
 #TODO should store these things in the proof file?
 params = {
@@ -202,6 +224,12 @@ params = {
         'p610': Parameters(305, 192, 329, 4, 7),
         'p751': Parameters(372, 239, 438, 4, 7),
     }
+
+################################################################
+
+def invalid():
+    print('\x1b[31minvalid proof\x1b[0m', file=sys.stderr)
+    exit(1)
 
 if __name__ == '__main__' and '__file__' in globals():
     param = [v for k,v in params.items() if '--'+k in sys.argv[1:]]
