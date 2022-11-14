@@ -7,6 +7,8 @@ edition = "2021"
 
 [dependencies]
 lazy_static = "1.4.0"
+hex = "0.4.3"
+subtle = "2.4.1"
 thiserror = "1.0.37"
 
 [build-dependencies]
